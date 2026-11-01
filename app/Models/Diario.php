@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Diario extends Model
 {
@@ -35,6 +36,24 @@ class Diario extends Model
     public function municipio(): BelongsTo
     {
         return $this->belongsTo(Municipio::class);
+    }
+
+    /** @return HasMany<Bloco, $this> */
+    public function blocos(): HasMany
+    {
+        return $this->hasMany(Bloco::class);
+    }
+
+    /** @return HasMany<Ato, $this> */
+    public function atos(): HasMany
+    {
+        return $this->hasMany(Ato::class);
+    }
+
+    /** @return HasMany<Multa, $this> */
+    public function multas(): HasMany
+    {
+        return $this->hasMany(Multa::class);
     }
 
     /**
