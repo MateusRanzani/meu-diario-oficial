@@ -21,7 +21,8 @@ use Illuminate\Support\Facades\Storage;
     {--ibge= : Código IBGE do município (padrão: QD_TERRITORY_ID do .env)}
     {--limite= : Limitar a N diários por execução}
     {--desde= : Segmentar a partir desta data, AAAA-MM-DD}
-    {--ate= : Segmentar até esta data, AAAA-MM-DD}')]
+    {--ate= : Segmentar até esta data, AAAA-MM-DD}
+    {--force : Re-segmentar diários que já foram segmentados anteriormente}')]
 #[Description('Segmenta os diários baixados em blocos e extrai campos estruturados')]
 class SegmentarDiarios extends Command
 {
@@ -47,9 +48,13 @@ class SegmentarDiarios extends Command
             return self::FAILURE;
         }
 
+        $statusPermitidos = $this->option('force')
+            ? [StatusDiario::Baixado, StatusDiario::Segmentado]
+            : [StatusDiario::Baixado];
+
         $consulta = Diario::query()
             ->whereRelation('municipio', 'codigo_ibge', $codigoIbge)
-            ->where('status', StatusDiario::Baixado)
+            ->whereIn('status', $statusPermitidos)
             ->whereNotNull('caminho_arquivo_local');
 
         if ($desde !== null) {
@@ -157,9 +162,11 @@ class SegmentarDiarios extends Command
                     'enviar_para_ia' => $dadosBloco['enviar_para_ia'],
                 ]);
 
+                $linhasNoBloco = $dadosBloco['linha_fim'] - $dadosBloco['linha_inicio'] + 1;
+
                 if ($dadosBloco['tipo'] === 'tabela') {
                     $parserMultas->parsear($diario, $bloco, $dadosBloco['texto']);
-                } elseif ($dadosBloco['enviar_para_ia']) {
+                } elseif ($dadosBloco['tipo'] === 'ato' && $linhasNoBloco >= 5) {
                     $campos = $extrator->extrair($dadosBloco['texto']);
 
                     $diario->atos()->create([
